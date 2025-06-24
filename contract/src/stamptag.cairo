@@ -50,12 +50,12 @@ pub mod StampTag {
 
     #[derive(Drop, starknet::Event)]
     pub struct StampClaimed {
-        user: ContractAddress,
-        tag_id: felt252,
+        pub user: ContractAddress,
+        pub tag_id: felt252,
     }
     #[derive(Drop, starknet::Event)]
     pub struct TagAdded {
-        tag_id: felt252,
+        pub tag_id: felt252,
     }
 
     #[abi(embed_v0)]
