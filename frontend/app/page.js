@@ -9,7 +9,7 @@ export default function HomePage() {
   return (
     <div className="min-h-screen">
       {/* Hero Section */}
-      <section className="px-6 py-16 max-w-7xl mx-auto">
+      <section className="px-6 py-24 max-w-7xl mx-auto">
         <div className="relative">
           {/* Hero Image */}
           <div className="relative w-full max-w-4xl mx-auto mb-8">
@@ -37,7 +37,9 @@ export default function HomePage() {
 
       {/* Powered by Starknet Section */}
       <section className="px-6 py-8 max-w-7xl mx-auto text-center">
-        <p className="text-lg mb-6">Powered by Starknet <img url="/strk-logo.svg" /></p>
+        <p className="text-lg mb-6 flex items-center justify-center gap-2">
+          Powered by Starknet <img src="/strk-logo.svg" alt="Starknet Logo" className="h-6 w-auto" />
+        </p>
         
         <Link href="/scan">
         <Button
