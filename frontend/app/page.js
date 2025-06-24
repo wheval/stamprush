@@ -3,6 +3,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Shield, Zap, Award } from "lucide-react"
 import Image from "next/image"
 import Navigation from "@/components/Navigation"
+import Link from "next/link"
 
 export default function HomePage() {
   return (
@@ -36,14 +37,16 @@ export default function HomePage() {
 
       {/* Powered by Starknet Section */}
       <section className="px-6 py-8 max-w-7xl mx-auto text-center">
-        <p className="text-lg mb-6">Powered by Starknet</p>
-
+        <p className="text-lg mb-6">Powered by Starknet <img url="/strk-logo.svg" /></p>
+        
+        <Link href="/scan">
         <Button
           size="lg"
           className="bg-green-400 font-semibold hover:bg-green-500 text-black font-bold px-8 py-3 text-lg mb-4"
         >
           TAP HERE
         </Button>
+        </Link>
 
         <p className="text-white/80">Hold near NFC tag</p>
       </section>
