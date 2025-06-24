@@ -7,8 +7,6 @@ import Navigation from "@/components/Navigation"
 export default function HomePage() {
   return (
     <div className="min-h-screen">
-      <Navigation />
-
       {/* Hero Section */}
       <section className="px-6 py-16 max-w-7xl mx-auto">
         <div className="relative">

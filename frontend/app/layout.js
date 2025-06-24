@@ -1,5 +1,6 @@
 import { Be_Vietnam_Pro } from "next/font/google";
 import "./globals.css";
+import Navigation from "@/components/Navigation";
 
 const beVietnamPro = Be_Vietnam_Pro({
   variable: "--font-be-vietnam-pro",
@@ -18,6 +19,7 @@ export default function RootLayout({ children }) {
       <body
         className={`${beVietnamPro.variable} antialiased`}
       >
+        <Navigation />
         {children}
       </body>
     </html>
