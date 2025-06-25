@@ -1,3 +1,3 @@
-pub mod istamptag;
-pub mod stamptag;
+pub mod istamprush;
+pub mod stamprush;
 

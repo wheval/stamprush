@@ -1,7 +1,7 @@
 ---
 description: 
-globs: *.cairo
-alwaysApply: false
+globs: 
+alwaysApply: true
 ---
 # Cairo Coding Rules
 
@@ -123,5 +123,4 @@ The Cairo Coder MCP tool is a critical resource for Cairo development and must b
 ### How to Use Cairo Coder MCP Effectively
 - Be Specific: Provide detailed queries (e.g., "Implement ERC20 using OpenZeppelin Cairo" instead of "ERC20").
 - Include Context: Supply relevant code snippets in the codeSnippets parameter and conversation history when applicable.
-
 - Don't mix contexts Keep the queries specific on a given topic. Don't ask about multiple concepts at once, rather, do multiple queries.
