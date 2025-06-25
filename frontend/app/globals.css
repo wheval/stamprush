@@ -2,22 +2,53 @@
 @import "leaflet/dist/leaflet.css";
 
 :root {
-  --background: #141F1F;
-  /* --background: #1a3d2e; */
-  --foreground: #ffffff;
+  /* Pop Vibrant Color Palette */
+  --background: #F9F9F9; /* Off White */
+  --background-soft: #FFFFFF; /* Pure White */
+  --foreground: #2D2D2D; /* Dark text for light background */
+  
+  /* Primary Colors */
+  --bright-orange: #FF6F00;
+  --aqua: #00C9A7;
+  --vivid-purple: #9C27B0;
+  
+  /* Component Colors */
+  --primary: var(--bright-orange);
+  --primary-foreground: #FFFFFF;
+  --secondary: var(--vivid-purple);
+  --secondary-foreground: #FFFFFF;
+  --accent: var(--aqua);
+  --accent-foreground: #FFFFFF;
+  
+  /* Card Colors */
+  --card: rgba(255, 111, 0, 0.05); /* Bright orange with transparency */
+  --card-foreground: var(--foreground);
+  --border: rgba(255, 111, 0, 0.2);
+  
+  /* Interactive States */
+  --hover-primary: rgba(255, 111, 0, 0.8);
+  --hover-secondary: rgba(156, 39, 176, 0.8);
+  --hover-accent: rgba(0, 201, 167, 0.8);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-be-vietnam-pro);
+  
+  /* Custom color utilities */
+  --color-bright-orange: var(--bright-orange);
+  --color-aqua: var(--aqua);
+  --color-vivid-purple: var(--vivid-purple);
+  --color-primary: var(--primary);
+  --color-secondary: var(--secondary);
+  --color-accent: var(--accent);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    /* --background: #1a3d2e; */
-    --background: #141F1F;
-    --foreground: #ededed;
+    --background: #F9F9F9;
+    --foreground: #2D2D2D;
   }
 }
 
@@ -25,4 +56,26 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-be-vietnam-pro), Arial, Helvetica, sans-serif;
+}
+
+/* Global vibrant effects */
+.vibrant-shadow {
+  box-shadow: 0 4px 20px rgba(255, 111, 0, 0.15);
+}
+
+.vibrant-shadow-purple {
+  box-shadow: 0 4px 20px rgba(156, 39, 176, 0.15);
+}
+
+.vibrant-shadow-aqua {
+  box-shadow: 0 4px 20px rgba(0, 201, 167, 0.15);
+}
+
+/* Playful hover effects */
+.playful-hover {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.playful-hover:hover {
+  transform: translateY(-2px);
 }

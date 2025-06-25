@@ -14,16 +14,20 @@ export default function StampsPage() {
   const paginatedStamps = stamps.slice((currentPage - 1) * stampsPerPage, currentPage * stampsPerPage);
 
   return (
-    <div className="min-h-screen text-white">
+    <div className="min-h-screen text-gray-800 bg-gradient-to-br from-[#F9F9F9] to-[#FFFFFF]">
       {/* Main Content */}
       <main className="px-6 py-8 max-w-7xl mx-auto">
-        <h1 className="text-4xl font-bold mb-8">My Stamps</h1>
+        <h1 className="text-4xl font-bold mb-8 bg-gradient-to-r from-[#FF6F00] to-[#9C27B0] bg-clip-text text-transparent">My Stamps</h1>
         {/* Stamps Grid */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6 mb-12">
-          {paginatedStamps.map((stamp) => (
+          {paginatedStamps.map((stamp, index) => (
             <Link key={stamp.id} href={`/stamps/${stamp.id}`}>
               <Card
-                className={"border-0 rounded-2xl overflow-hidden hover:scale-105 transition-transform cursor-pointer group"}
+                className={`border-0 rounded-2xl overflow-hidden hover:scale-105 transition-all duration-300 cursor-pointer group bg-white playful-hover ${
+                  index % 3 === 0 ? 'border border-[#FF6F00]/20 hover:border-[#FF6F00]/40 vibrant-shadow' :
+                  index % 3 === 1 ? 'border border-[#9C27B0]/20 hover:border-[#9C27B0]/40 vibrant-shadow-purple' :
+                  'border border-[#00C9A7]/20 hover:border-[#00C9A7]/40 vibrant-shadow-aqua'
+                }`}
               >
                 <div className="relative aspect-[3/4] p-0 flex items-center justify-center w-full h-48">
                   {stamp.image.endsWith('.gif') ? (

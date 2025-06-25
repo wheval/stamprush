@@ -10,7 +10,7 @@ export default function Pagination({ currentPage, totalPages, onPageChange }) {
       <Button
         variant="ghost"
         size="icon"
-        className="text-white hover:bg-white/10"
+        className="text-[#FF6F00] hover:bg-[#FF6F00]/10 border border-[#FF6F00]/20 playful-hover"
         onClick={() => onPageChange(Math.max(1, currentPage - 1))}
         disabled={currentPage === 1}
       >
@@ -19,10 +19,10 @@ export default function Pagination({ currentPage, totalPages, onPageChange }) {
       {pages.map((page) => (
         <Button
           key={page}
-          className={`w-10 h-10 rounded-full ${
+          className={`w-10 h-10 rounded-full transition-all duration-300 playful-hover ${
             page === currentPage
-              ? "bg-green-400 text-black hover:bg-green-500"
-              : "text-white hover:bg-white/10"
+              ? "bg-[#FF6F00] text-white hover:bg-[#FF6F00]/90 vibrant-shadow"
+              : "text-[#FF6F00] hover:bg-[#FF6F00]/10 border border-[#FF6F00]/20"
           }`}
           variant={page === currentPage ? undefined : "ghost"}
           onClick={() => onPageChange(page)}
@@ -33,7 +33,7 @@ export default function Pagination({ currentPage, totalPages, onPageChange }) {
       <Button
         variant="ghost"
         size="icon"
-        className="text-white hover:bg-white/10"
+        className="text-[#FF6F00] hover:bg-[#FF6F00]/10 border border-[#FF6F00]/20 playful-hover"
         onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
         disabled={currentPage === totalPages}
       >

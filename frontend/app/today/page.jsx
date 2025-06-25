@@ -43,21 +43,21 @@ export default function TodayStampPage() {
   }
 
   return (
-    <div className="min-h-screen text-white">
+    <div className="min-h-screen text-gray-800 bg-gradient-to-br from-[#F9F9F9] to-[#FFFFFF]">
       {/* Main Content */}
       <main className="px-6 py-8 max-w-4xl mx-auto">
-        <h1 className="text-4xl font-bold mb-8">{"Today's Stamp"}</h1>
+        <h1 className="text-4xl font-bold mb-8 text-[#FF6F00]">{"Today's Stamp"}</h1>
 
         {/* Stamp Card */}
-        <div className="bg-gradient-to-br from-orange-100 to-pink-100 rounded-3xl p-12 mb-8 flex items-center justify-center">
+        <div className="bg-white border border-[#FF6F00]/20 rounded-3xl p-12 mb-8 flex items-center justify-center vibrant-shadow">
           <div className="relative">
             {/* Stamp Circle */}
-            <div className="w-80 h-80 bg-white rounded-full shadow-2xl flex items-center justify-center relative">
+            <div className="w-80 h-80 bg-gradient-to-br from-white to-gray-50 rounded-full shadow-xl flex items-center justify-center relative border-4 border-[#00C9A7]/20">
               {/* Botanical Illustration */}
               <div className="w-64 h-64 flex items-center justify-center">
                 <svg
                   viewBox="0 0 200 200"
-                  className="w-full h-full text-gray-800"
+                  className="w-full h-full text-gray-700"
                   fill="none"
                   stroke="currentColor"
                   strokeWidth="1.5"
@@ -102,25 +102,25 @@ export default function TodayStampPage() {
 
         {/* Stamp Info */}
         <div className="text-center mb-8">
-          <h2 className="text-3xl font-bold mb-4">{todayStamp.name}</h2>
-          <p className="text-white/80 text-lg max-w-2xl mx-auto">
+          <h2 className="text-3xl font-bold mb-4 bg-gradient-to-r from-[#FF6F00] to-[#9C27B0] bg-clip-text text-transparent">{todayStamp.name}</h2>
+          <p className="text-gray-600 text-lg max-w-2xl mx-auto">
             {todayStamp.description}
           </p>
         </div>
 
         {/* Countdown Timer */}
         <div className="flex justify-center gap-4 mb-8">
-          <div className="bg-white/10 rounded-2xl px-6 py-4 text-center min-w-[100px]">
-            <div className="text-3xl font-bold">{timeLeft.hours.toString().padStart(2, "0")}</div>
-            <div className="text-white/60 text-sm">Hours</div>
+          <div className="bg-white border border-[#FF6F00]/20 rounded-2xl px-6 py-4 text-center min-w-[100px] vibrant-shadow">
+            <div className="text-3xl font-bold text-[#FF6F00]">{timeLeft.hours.toString().padStart(2, "0")}</div>
+            <div className="text-gray-500 text-sm">Hours</div>
           </div>
-          <div className="bg-white/10 rounded-2xl px-6 py-4 text-center min-w-[100px]">
-            <div className="text-3xl font-bold">{timeLeft.minutes.toString().padStart(2, "0")}</div>
-            <div className="text-white/60 text-sm">Minutes</div>
+          <div className="bg-white border border-[#9C27B0]/20 rounded-2xl px-6 py-4 text-center min-w-[100px] vibrant-shadow-purple">
+            <div className="text-3xl font-bold text-[#9C27B0]">{timeLeft.minutes.toString().padStart(2, "0")}</div>
+            <div className="text-gray-500 text-sm">Minutes</div>
           </div>
-          <div className="bg-white/10 rounded-2xl px-6 py-4 text-center min-w-[100px]">
-            <div className="text-3xl font-bold">{timeLeft.seconds.toString().padStart(2, "0")}</div>
-            <div className="text-white/60 text-sm">Seconds</div>
+          <div className="bg-white border border-[#00C9A7]/20 rounded-2xl px-6 py-4 text-center min-w-[100px] vibrant-shadow-aqua">
+            <div className="text-3xl font-bold text-[#00C9A7]">{timeLeft.seconds.toString().padStart(2, "0")}</div>
+            <div className="text-gray-500 text-sm">Seconds</div>
           </div>
         </div>
 
@@ -129,8 +129,10 @@ export default function TodayStampPage() {
           <Button
             onClick={handleClaim}
             disabled={hasClaimed}
-            className={`px-12 py-3 text-lg font-semibold rounded-full ${
-              hasClaimed ? "bg-gray-500 cursor-not-allowed" : "bg-green-400 hover:bg-green-500 text-black"
+            className={`px-12 py-3 text-lg font-semibold rounded-full transition-all duration-300 playful-hover ${
+              hasClaimed 
+                ? "bg-gray-400 cursor-not-allowed text-white" 
+                : "bg-[#FF6F00] hover:bg-[#FF6F00]/90 text-white vibrant-shadow"
             }`}
           >
             {hasClaimed ? "Claimed" : "Claim"}
@@ -139,8 +141,8 @@ export default function TodayStampPage() {
 
         {/* Claims Info */}
         <div className="text-center mb-8">
-          <p className="text-white/60 mb-2">{claimsRemaining} claims remaining</p>
-          {hasClaimed && <p className="text-white/40">{"You've"} already claimed this stamp</p>}
+          <p className="text-gray-600 mb-2 font-medium">{claimsRemaining} claims remaining</p>
+          {hasClaimed && <p className="text-gray-500">{"You've"} already claimed this stamp</p>}
         </div>
 
         {/* Action Buttons */}
@@ -148,14 +150,14 @@ export default function TodayStampPage() {
           <Button
             asChild
             variant="outline"
-            className="border-white/20 text-white hover:bg-white/10 px-8 py-3 rounded-full"
+            className="border-[#9C27B0]/30 text-[#9C27B0] hover:bg-[#9C27B0]/10 px-8 py-3 rounded-full transition-all duration-300 playful-hover"
           >
             <Link href="/stamps">My Stamps</Link>
           </Button>
           <Button
             asChild
             variant="outline"
-            className="border-white/20 text-white hover:bg-white/10 px-8 py-3 rounded-full"
+            className="border-[#00C9A7]/30 text-[#00C9A7] hover:bg-[#00C9A7]/10 px-8 py-3 rounded-full transition-all duration-300 playful-hover"
           >
             <Link href="/leaderboard">Leaderboard</Link>
           </Button>
