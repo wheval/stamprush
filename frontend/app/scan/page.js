@@ -9,7 +9,6 @@ import { useRouter } from "next/navigation"
 
 export default function ScanPage() {
   const [scanState, setScanState] = useState("initial")
-  const [progress, setProgress] = useState(0)
   const router = useRouter()
 
   // Simulate NFC scanning process
@@ -22,7 +21,6 @@ export default function ScanPage() {
 
       // Simulate stamp creation progress
       const interval = setInterval(() => {
-        setProgress((prev) => {
           if (prev >= 100) {
             clearInterval(interval)
             setScanState("success")
@@ -35,7 +33,6 @@ export default function ScanPage() {
           return prev + 10
         })
       }, 200)
-    }, 2000)
   }
 
   const handleTapHere = () => {
@@ -137,13 +134,6 @@ export default function ScanPage() {
 
               <h2 className="text-3xl font-bold text-green-400 mb-4">Creating Your Stamp</h2>
               <p className="text-gray-400 text-lg mb-8">Minting your proof-of-contact on Starknet...</p>
-
-              {/* Progress Dots */}
-              <div className="flex justify-center gap-2">
-                <div className={`w-3 h-3 rounded-full ${progress > 0 ? "bg-green-400" : "bg-gray-600"}`}></div>
-                <div className={`w-3 h-3 rounded-full ${progress > 33 ? "bg-purple-400" : "bg-gray-600"}`}></div>
-                <div className={`w-3 h-3 rounded-full ${progress > 66 ? "bg-pink-400" : "bg-gray-600"}`}></div>
-              </div>
             </div>
           )}
 

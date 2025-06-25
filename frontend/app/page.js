@@ -12,7 +12,7 @@ export default function HomePage() {
       <section className="px-6 py-24 max-w-7xl mx-auto">
         <div className="relative">
           {/* Hero Image */}
-          <div className="relative w-full max-w-4xl mx-auto mb-8">
+          <div className="relative w-full max-w-6xl mx-auto mb-8">
             {/* <Image
               src="/hero-illustration.png"
               alt="Hands interacting with mobile device showing proof of contact"
@@ -25,9 +25,9 @@ export default function HomePage() {
             {/* Overlay Text */}
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="text-center">
-                <h1 className="text-4xl md:text-6xl font-bold mb-4">Proof of Contact</h1>
+                <h1 className="text-4xl md:text-6xl font-bold mb-4">Find fast. Claim fast. Flex hard.</h1>
                 <p className="text-lg md:text-xl text-white/90 max-w-2xl mx-auto">
-                  Verify real-world interactions and mint proof-of-contact stamps on the blockchain. No crypto required.
+                  Verify real-world interactions and mint proof-of-contact stamps on the blockchain.
                 </p>
               </div>
             </div>
@@ -37,27 +37,24 @@ export default function HomePage() {
 
       {/* Powered by Starknet Section */}
       <section className="px-6 py-8 max-w-7xl mx-auto text-center">
-        <p className="text-lg mb-6 flex items-center justify-center gap-2">
-          Powered by Starknet <img src="/strk-logo.svg" alt="Starknet Logo" className="h-6 w-auto" />
-        </p>
-        
-        <Link href="/scan">
+        <Link href="/today">
         <Button
           size="lg"
-          className="bg-green-400 font-semibold hover:bg-green-500 text-black font-bold px-8 py-3 text-lg mb-4"
+          className="bg-green-400 uppercase font-semibold hover:bg-green-500 text-black font-bold px-8 py-3 text-lg mb-4"
         >
-          TAP HERE
+          Start Collecting
         </Button>
         </Link>
-
-        <p className="text-white/80">Hold near NFC tag</p>
+        <p className="text-sm flex items-center justify-center gap-2">
+          Powered by Starknet <img src="/strk-logo.svg" alt="Starknet Logo" className="h-6 w-auto" />
+        </p>
       </section>
 
       {/* Features Section */}
       <section className="px-6 py-16 max-w-7xl mx-auto">
         <div className="mb-12">
           <h2 className="text-3xl md:text-4xl font-bold mb-4">Features</h2>
-          <p className="text-lg text-white/80">Explore the key features of StampTag</p>
+          <p className="text-lg text-white/80">Explore the key features of StampQuest</p>
         </div>
 
         <div className="grid md:grid-cols-3 gap-6">

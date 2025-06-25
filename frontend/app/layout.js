@@ -9,7 +9,7 @@ const beVietnamPro = Be_Vietnam_Pro({
 });
 
 export const metadata = {
-  title: "StampTag",
+  title: "StampRush",
   description: "Proof of Contact",
 };
 

@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button"
 import { Bell } from "lucide-react"
 import Link from "next/link"
 import { notFound } from "next/navigation"
-import stamps from "../../mock/stamps"
+import stamps from "@/mock/stamps"
 import Image from "next/image"
 
 const stampData = Object.fromEntries(stamps.map(stamp => [stamp.id, stamp]))

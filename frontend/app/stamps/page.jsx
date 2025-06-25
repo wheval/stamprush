@@ -1,7 +1,7 @@
 "use client"
 import { Card } from "@/components/ui/card"
 import Link from "next/link"
-import stamps from "../mock/stamps"
+import stamps from "@/mock/stamps"
 import Navigation from "@/components/Navigation"
 import Pagination from "@/components/ui/pagination"
 import { useState } from "react"
