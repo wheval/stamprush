@@ -25,7 +25,7 @@ export default async function StampPage({ params }) {
             Home
           </Link>
           <span>/</span>
-          <Link href="/stamps" className="hover:text-[#FF6F00] transition-colors">
+          <Link href="/my-stamps" className="hover:text-[#FF6F00] transition-colors">
             <span>Stamps</span>
           </Link>
           <span>/</span>

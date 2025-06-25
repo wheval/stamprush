@@ -65,14 +65,14 @@ export default function LeaderboardPage() {
         {/* Action Buttons */}
         <div className="flex gap-4">
           <Button asChild className="bg-[#FF6F00] hover:bg-[#FF6F00]/90 text-white font-semibold px-8 py-3 rounded-full vibrant-shadow transition-all duration-300 playful-hover">
-            <Link href="/stamps">View My Stamps</Link>
+            <Link href="/my-stamps">View My Stamps</Link>
           </Button>
           <Button
             asChild
             variant="outline"
             className="border-[#9C27B0]/30 text-[#9C27B0] hover:bg-[#9C27B0]/10 px-8 py-3 rounded-full transition-all duration-300 playful-hover"
           >
-            <Link href="/today">Claim Today's Stamp</Link>
+            <Link href="/stamps">Claim Today's Stamp</Link>
           </Button>
         </div>
       </main>

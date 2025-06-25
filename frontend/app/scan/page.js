@@ -5,11 +5,12 @@ import { Button } from "@/components/ui/button"
 import { Bell, Wifi } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-
+import Confetti from "@/components/Confetti"
 
 export default function ScanPage() {
   const [scanState, setScanState] = useState("initial")
   const [progress, setProgress] = useState(0)
+  const [showConfetti, setShowConfetti] = useState(false)
   const router = useRouter()
 
   // Simulate NFC scanning process
@@ -24,15 +25,16 @@ export default function ScanPage() {
       // Simulate stamp creation progress
       const interval = setInterval(() => {
         setProgress((prev) => {
-          if (prev >= 100) {
-            clearInterval(interval)
-            setScanState("success")
-            // Redirect to new stamp after success
-            setTimeout(() => {
-              router.push("/stamps/1")
-            }, 2000)
-            return 100
-          }
+                  if (prev >= 100) {
+          clearInterval(interval)
+          setScanState("success")
+          setShowConfetti(true)
+          // Redirect to new stamp after success
+          setTimeout(() => {
+            router.push("/my-stamps/1")
+          }, 2000)
+          return 100
+        }
           return prev + 10
         })
       }, 200)
@@ -45,6 +47,11 @@ export default function ScanPage() {
 
   return (
     <div className="min-h-screen text-gray-800 bg-gradient-to-br from-[#F9F9F9] to-[#FFFFFF]">
+      <Confetti 
+        show={showConfetti} 
+        onComplete={() => setShowConfetti(false)} 
+      />
+      
       {/* Main Content */}
       <main className="flex items-center justify-center min-h-[calc(100vh-80px)] px-6">
         <div className="w-full max-w-md">

@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Shield, Zap, Award } from "lucide-react"
 import Image from "next/image"
-import Navigation from "@/components/Navigation"
+import Navigation from "@/components/Navigation.jsx"
 import Link from "next/link"
 
 export default function HomePage() {
@@ -39,7 +39,7 @@ export default function HomePage() {
 
       {/* Powered by Starknet Section */}
       <section className="px-6 py-8 max-w-7xl mx-auto text-center">
-        <Link href="/today">
+        <Link href="/stamps">
           <Button
             size="lg"
             className="bg-[#FF6F00] hover:bg-[#FF6F00]/90 text-white font-bold px-8 py-3 text-lg mb-4 vibrant-shadow uppercase font-semibold transition-all duration-300 playful-hover"
