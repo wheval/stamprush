@@ -1,0 +1,277 @@
+# 🚀 IPFS Upload System Setup Guide for Stamp Rush
+
+This guide will walk you through setting up the complete IPFS upload system for your Stamp Rush game using Pinata API.
+
+## 📋 What You'll Get
+
+After completing this setup, you'll have:
+- ✅ **Image uploads** to IPFS via Pinata
+- ✅ **JSON metadata uploads** to IPFS via Pinata  
+- ✅ **Complete stamp creation workflow** (image + metadata)
+- ✅ **Production-ready error handling** and logging
+- ✅ **Environment configuration** with API keys
+- ✅ **Integration ready** for your admin panel
+- ✅ **Testing utilities** to verify everything works
+
+## 🛠️ Quick Setup (5 minutes)
+
+### Step 1: Install Dependencies
+
+```bash
+cd frontend
+npm install
+```
+
+This installs the required packages: `axios`, `form-data`, and `dotenv`.
+
+### Step 2: Get Pinata API Keys
+
+1. **Sign up** at [Pinata.cloud](https://app.pinata.cloud) (free tier available)
+2. **Navigate** to [API Keys](https://app.pinata.cloud/keys)
+3. **Create a new key**:
+   - Click "New Key"
+   - Name it "Stamp Rush"
+   - Enable "Admin" permissions
+   - Click "Create Key"
+4. **Save your credentials** immediately (you won't see the secret again!)
+
+### Step 3: Run Interactive Setup
+
+```bash
+npm run ipfs:setup
+```
+
+This interactive script will:
+- Guide you through entering your API keys
+- Create a `.env.local` file with proper configuration
+- Test your Pinata connection
+- Provide next steps
+
+### Step 4: Test Everything Works
+
+```bash
+npm run ipfs:test
+```
+
+This will run comprehensive tests to verify:
+- ✅ Pinata connection
+- ✅ JSON metadata upload
+- ✅ Image upload (if test images exist)
+- ✅ Complete stamp metadata workflow
+
+## 📚 Usage Examples
+
+### Basic Image Upload
+
+```javascript
+const { uploadImageToIPFS } = require('./lib/ipfs/pinata');
+
+const imageUri = await uploadImageToIPFS('./path/to/stamp.png', {
+  name: 'event-stamp-image',
+  metadata: {
+    event: 'Tech Conference 2024',
+    location: 'San Francisco'
+  }
+});
+
+console.log('IPFS URI:', imageUri);
+// Output: ipfs://QmYourImageHashHere
+```
+
+### Basic JSON Upload
+
+```javascript
+const { uploadJSONToIPFS } = require('./lib/ipfs/pinata');
+
+const metadata = {
+  name: "Conference Stamp",
+  description: "Exclusive stamp for tech conference attendees",
+  attributes: [
+    { trait_type: "Event", value: "Tech Conference 2024" },
+    { trait_type: "Rarity", value: "Limited Edition" }
+  ]
+};
+
+const metadataUri = await uploadJSONToIPFS(metadata, {
+  name: 'conference-stamp-metadata'
+});
+
+console.log('Metadata URI:', metadataUri);
+// Output: ipfs://QmYourMetadataHashHere
+```
+
+### Complete Stamp Creation
+
+```javascript
+const { uploadStampMetadata } = require('./lib/ipfs/pinata');
+
+const result = await uploadStampMetadata('./event-stamp.png', {
+  name: "Tech Conference 2024",
+  description: "Exclusive stamp for tech conference attendees",
+  location: "San Francisco Convention Center",
+  attributes: [
+    { trait_type: "Event Type", value: "Technology" },
+    { trait_type: "Year", value: "2024" },
+    { trait_type: "Rarity", value: "Limited Edition" }
+  ]
+});
+
+console.log('Image URI:', result.imageUri);
+console.log('Metadata URI:', result.metadataUri);
+// Use result.metadataUri in your smart contract
+```
+
+## 🔧 Integration with Admin Panel
+
+The system is designed to integrate seamlessly with your existing admin panel:
+
+```javascript
+// In your admin component
+import { uploadStampMetadata } from '../lib/ipfs/pinata';
+
+async function handleStampCreation(imageFile, formData) {
+  try {
+    // Step 1: Upload to IPFS
+    const { metadataUri } = await uploadStampMetadata(imagePath, {
+      name: formData.name,
+      description: formData.description,
+      location: formData.location
+    });
+    
+    // Step 2: Create on blockchain
+    await addTag(
+      formData.tagId,
+      formData.maxClaims,
+      formData.startTime,
+      formData.endTime,
+      metadataUri  // ← Use IPFS URI here
+    );
+    
+    toast.success('Stamp created successfully!');
+  } catch (error) {
+    toast.error(`Failed to create stamp: ${error.message}`);
+  }
+}
+```
+
+## 📁 File Structure
+
+```
+frontend/
+├── lib/
+│   └── ipfs/
+│       ├── pinata.js              # Main upload module
+│       ├── admin-integration.js   # Admin panel integration
+│       ├── test-upload.js         # Test script
+│       ├── setup.js               # Interactive setup
+│       └── README.md              # Detailed documentation
+├── .env.local                     # Your API keys (auto-generated)
+├── package.json                   # Updated with IPFS scripts
+└── IPFS_SETUP_GUIDE.md           # This file
+```
+
+## 🚀 Available Scripts
+
+```bash
+# Interactive setup (creates .env.local with your API keys)
+npm run ipfs:setup
+
+# Test all IPFS functionality
+npm run ipfs:test
+
+# Show setup instructions
+npm run ipfs:help
+```
+
+## 🔒 Security & Environment Variables
+
+Your `.env.local` file (auto-generated by setup) contains:
+
+```env
+# Pinata IPFS Configuration
+PINATA_API_KEY=your_actual_api_key
+PINATA_API_SECRET=your_actual_api_secret
+
+# Optional: Custom IPFS Gateway
+IPFS_GATEWAY_URL=https://gateway.pinata.cloud/ipfs/
+
+# Existing Starknet Configuration
+NEXT_PUBLIC_STARKNET_NETWORK=mainnet-alpha
+NEXT_PUBLIC_CONTRACT_ADDRESS=0x06da58930ab1bfd7f808cd4b19a7f25f85e5af6b806e820ceecdb73162edb383
+```
+
+**Important Security Notes:**
+- ✅ `.env.local` is automatically ignored by git
+- ✅ Never commit API keys to version control
+- ✅ Regenerate keys if they're ever compromised
+- ✅ Use environment variables for all sensitive data
+
+## 🧪 Testing & Validation
+
+The test script validates:
+
+1. **Connection Test**: Verifies API credentials work
+2. **JSON Upload Test**: Uploads sample metadata
+3. **Image Upload Test**: Uploads test image (if available)
+4. **Complete Workflow Test**: Full stamp creation process
+
+Run tests anytime with:
+```bash
+npm run ipfs:test
+```
+
+## 🐛 Troubleshooting
+
+### Common Issues
+
+**"API credentials not found"**
+- Run `npm run ipfs:setup` to configure your API keys
+- Ensure `.env.local` exists in the frontend directory
+
+**"Connection test failed"**
+- Check your internet connection
+- Verify API keys are correct at [Pinata.cloud](https://app.pinata.cloud/keys)
+- Ensure API key has "Admin" permissions
+
+**"File not found" during image upload**
+- Place test images in `frontend/public/rush/` directory
+- Or provide correct file path to `uploadImageToIPFS()`
+
+**"Module not found" errors**
+- Run `npm install` to ensure all dependencies are installed
+- Check that you're in the `frontend` directory
+
+### Getting Help
+
+1. **Check logs**: All functions provide detailed console output
+2. **Read documentation**: See `frontend/lib/ipfs/README.md`
+3. **Test individually**: Use `npm run ipfs:test` to identify specific issues
+4. **Verify setup**: Re-run `npm run ipfs:setup` if needed
+
+## 🎯 Next Steps
+
+After successful setup:
+
+1. **Integrate with admin panel**: Use `uploadStampMetadata()` in your stamp creation form
+2. **Customize metadata**: Add your own attributes and properties
+3. **Test with real images**: Upload actual stamp images to verify everything works
+4. **Deploy to production**: The system is production-ready with proper error handling
+
+## 📊 Production Considerations
+
+- **File Size Limits**: Images up to 100MB, JSON up to 1MB
+- **Timeout Handling**: 2-minute timeout for large uploads
+- **Error Recovery**: Automatic retry logic for failed uploads
+- **Logging**: Comprehensive logging for debugging
+- **Performance**: Optimized for concurrent uploads
+
+## 🤝 Support
+
+If you need help:
+- Check the detailed documentation in `frontend/lib/ipfs/README.md`
+- Run `npm run ipfs:help` for quick setup instructions
+- Review the test output from `npm run ipfs:test`
+
+---
+
+**🎉 You're all set!** Your IPFS upload system is ready to handle stamp creation for the Stamp Rush game. 

@@ -1,6 +1,8 @@
 import { Be_Vietnam_Pro } from "next/font/google";
 import "./globals.css";
 import Navigation from "@/components/Navigation.jsx";
+import { StarknetProvider } from "@/lib/starknet-provider";
+import { Toaster } from "react-hot-toast";
 
 const beVietnamPro = Be_Vietnam_Pro({
   variable: "--font-be-vietnam-pro",
@@ -19,8 +21,20 @@ export default function RootLayout({ children }) {
       <body
         className={`${beVietnamPro.variable} antialiased`}
       >
+        <StarknetProvider>
         <Navigation />
         {children}
+          <Toaster 
+            position="top-right"
+            toastOptions={{
+              duration: 4000,
+              style: {
+                background: '#363636',
+                color: '#fff',
+              },
+            }}
+          />
+        </StarknetProvider>
       </body>
     </html>
   );

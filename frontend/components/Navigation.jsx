@@ -2,10 +2,11 @@
 import { Button } from "@/components/ui/button"
 import Image from "next/image"
 import Link from "next/link";
-import { useState } from "react"
+import { useStarknet } from "@/lib/starknet-provider"
+import WalletConnect from "./wallet-connect"
 
 export default function Navigation() {
-  const [isLoggedIn, setIsLoggedIn] = useState(true);
+  const { isConnected, address } = useStarknet()
 
   return (
     <nav className="flex items-center justify-between px-6 py-4 max-w-7xl mx-auto">
@@ -15,8 +16,8 @@ export default function Navigation() {
 
       {/* Navigation Links */}
       <div className="hidden md:flex items-center gap-6">
-        {isLoggedIn ? (
-          // Logged-in user navigation
+        {isConnected ? (
+          // Connected wallet navigation
           <>
             <Link href="/stamps" className="hover:text-[#00C9A7] transition-colors text-[#FF6F00] font-medium">
               Stamps
@@ -35,7 +36,7 @@ export default function Navigation() {
             </Link>
           </>
         ) : (
-          // Non-logged-in user navigation
+          // Non-connected wallet navigation
           <>
             <a href="#features" className="hover:text-[#00C9A7] transition-colors text-[#FF6F00] font-medium">
               Features
@@ -59,8 +60,8 @@ export default function Navigation() {
         </Button>
       </div>
 
-      {/* Show "Get Started" if not logged in, else show user actions */}
-      {isLoggedIn ? (
+      {/* Show wallet connection and user actions */}
+      {isConnected ? (
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" className="text-[#FF6F00] hover:bg-[#FF6F00]/10 border border-[#FF6F00]/20 playful-hover">
             <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -69,13 +70,12 @@ export default function Navigation() {
           </Button>
           <Link href="/profile">
             <div className="w-8 h-8 bg-gradient-to-r from-[#9C27B0] to-[#00C9A7] rounded-full flex items-center justify-center cursor-pointer hover:from-[#9C27B0]/80 hover:to-[#00C9A7]/80 transition-all duration-300 vibrant-shadow-purple playful-hover">
-              <span className="text-sm font-semibold text-white">A</span>
+              <span className="text-sm font-semibold text-white">
+                {address ? address.slice(2, 4).toUpperCase() : "U"}
+              </span>
             </div>
           </Link>
-          {/* Temporary button to toggle login state for demo */}
-          <Button variant="outline" size="sm" onClick={() => setIsLoggedIn(false)} className="border-[#FF6F00]/30 text-[#FF6F00] hover:bg-[#FF6F00]/10 playful-hover">
-            Log out
-          </Button>
+          <WalletConnect />
         </div>
       ) : (
         <div className="flex items-center gap-4">
@@ -84,9 +84,7 @@ export default function Navigation() {
               Explore Stamps
             </Button>
           </Link>
-          <Button className="bg-[#FF6F00] hover:bg-[#FF6F00]/90 text-white font-semibold px-6 rounded-full vibrant-shadow playful-hover" onClick={() => setIsLoggedIn(true)}>
-            Get Started
-          </Button>
+          <WalletConnect />
         </div>
       )}
 

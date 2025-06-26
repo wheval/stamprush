@@ -3,23 +3,105 @@
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { Bell, Clock, Zap, MapPin, Users } from "lucide-react"
+import { Bell, Clock, Zap, MapPin, Users, Loader2 } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
-import { stampEvents } from "@/mock/rush"
-import todayStamp from "@/mock/today"
 import Confetti from "@/components/Confetti"
+import { useStarknet } from "@/lib/starknet-provider"
+import { useStampContract } from "@/lib/hooks/use-stamp-contract"
+import toast from "react-hot-toast"
 
 export default function StampsPage() {
+  const { isConnected, address } = useStarknet()
+  const { 
+    claimStamp, 
+    getTagMetadata, 
+    getClaimCount, 
+    hasUserClaimed, 
+    getUserTotalClaims,
+    loading 
+  } = useStampContract()
+
   // Today's stamp state
+  const [todayStamp, setTodayStamp] = useState({
+    id: "community-stamp",
+    name: "Community Stamp",
+    description: "This stamp is a special edition for our community members. Claim it before it's gone!",
+    location: "Community Center",
+    initialTimeLeft: { hours: 12, minutes: 34, seconds: 56 },
+    claimsRemaining: 0,
+    totalClaimed: 0,
+    hasClaimed: false,
+    recentClaims: []
+  })
+  
   const [timeLeft, setTimeLeft] = useState(todayStamp.initialTimeLeft)
-  const [hasClaimed, setHasClaimed] = useState(false)
-  const [claimsRemaining, setClaimsRemaining] = useState(todayStamp.initialClaimsRemaining)
   const [showTodayConfetti, setShowTodayConfetti] = useState(false)
 
   // Rush events state
-  const [events, setEvents] = useState(stampEvents || [])
+  const [events, setEvents] = useState([])
   const [showRushConfetti, setShowRushConfetti] = useState(false)
+  const [dataLoading, setDataLoading] = useState(true)
+
+  // Sample event IDs - replace with your actual tag IDs
+  const sampleEventIds = ["tech-conference", "art-fair", "community-cleanup", "book-signing"]
+
+  // Load blockchain data
+  useEffect(() => {
+    const loadBlockchainData = async () => {
+      if (!isConnected) {
+        setDataLoading(false)
+        return
+      }
+
+      try {
+        setDataLoading(true)
+
+        // Load today's stamp data
+        const [todayMetadata, todayClaimCount, todayUserClaimed] = await Promise.all([
+          getTagMetadata(todayStamp.id),
+          getClaimCount(todayStamp.id),
+          hasUserClaimed(address, todayStamp.id)
+        ])
+
+        setTodayStamp(prev => ({
+          ...prev,
+          totalClaimed: todayClaimCount,
+          hasClaimed: todayUserClaimed
+        }))
+
+        // Load rush events data
+        const eventsData = await Promise.all(
+          sampleEventIds.map(async (eventId) => {
+            const [metadata, claimCount, userClaimed] = await Promise.all([
+              getTagMetadata(eventId),
+              getClaimCount(eventId),
+              hasUserClaimed(address, eventId)
+            ])
+
+            return {
+              id: eventId,
+              title: metadata?.title || `Event ${eventId}`,
+              description: metadata?.description || `Claim your stamp for ${eventId}`,
+              image: `/rush/${sampleEventIds.indexOf(eventId) + 1}.png`,
+              initialTime: { hours: 1, minutes: 30, seconds: 45 },
+              claimed: userClaimed,
+              totalClaimed: claimCount
+            }
+          })
+        )
+
+        setEvents(eventsData)
+      } catch (error) {
+        console.error('Error loading blockchain data:', error)
+        toast.error('Failed to load stamp data')
+      } finally {
+        setDataLoading(false)
+      }
+    }
+
+    loadBlockchainData()
+  }, [isConnected, address, getTagMetadata, getClaimCount, hasUserClaimed])
 
   // Countdown timer effect for today's stamp
   useEffect(() => {
@@ -74,17 +156,62 @@ export default function StampsPage() {
     return () => clearInterval(interval)
   }, [])
 
-  const handleTodayClaim = () => {
-    if (!hasClaimed && claimsRemaining > 0) {
-      setHasClaimed(true)
-      setClaimsRemaining((prev) => prev - 1)
+  const handleTodayClaim = async () => {
+    if (!isConnected) {
+      toast.error('Please connect your wallet first')
+      return
+    }
+
+    if (todayStamp.hasClaimed) {
+      toast.error('You have already claimed this stamp')
+      return
+    }
+
+    const result = await claimStamp(todayStamp.id)
+    if (result) {
+      setTodayStamp(prev => ({
+        ...prev,
+        hasClaimed: true,
+        totalClaimed: prev.totalClaimed + 1
+      }))
       setShowTodayConfetti(true)
     }
   }
 
-  const handleRushClaim = (eventId) => {
-    setEvents((prevEvents) => prevEvents.map((event) => (event.id === eventId ? { ...event, claimed: true } : event)))
+  const handleRushClaim = async (eventId) => {
+    if (!isConnected) {
+      toast.error('Please connect your wallet first')
+      return
+    }
+
+    const event = events.find(e => e.id === eventId)
+    if (event?.claimed) {
+      toast.error('You have already claimed this stamp')
+      return
+    }
+
+    const result = await claimStamp(eventId)
+    if (result) {
+      setEvents(prevEvents => 
+        prevEvents.map(event => 
+          event.id === eventId 
+            ? { ...event, claimed: true, totalClaimed: event.totalClaimed + 1 }
+            : event
+        )
+      )
     setShowRushConfetti(true)
+    }
+  }
+
+  if (dataLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-orange-50 to-purple-50 flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="w-8 h-8 animate-spin text-orange-500" />
+          <p className="text-gray-600">Loading stamps...</p>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -107,6 +234,11 @@ export default function StampsPage() {
           <p className="text-gray-600 text-lg">
             Claim today's featured stamp and discover limited-time stamps in real-time!
           </p>
+          {!isConnected && (
+            <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+              <p className="text-yellow-800">Connect your wallet to claim stamps and view your collection!</p>
+            </div>
+          )}
         </div>
 
         {/* Today's Stamp Section */}
@@ -153,7 +285,7 @@ export default function StampsPage() {
                   {/* Stats */}
                   <div className="grid grid-cols-2 gap-4">
                     <div className="text-center p-4 bg-gradient-to-r from-orange-50 to-purple-50 rounded-xl border border-orange-200">
-                      <div className="text-2xl font-bold text-orange-500">{claimsRemaining}</div>
+                      <div className="text-2xl font-bold text-orange-500">{todayStamp.claimsRemaining}</div>
                       <div className="text-sm text-gray-600 font-medium">Claims Left</div>
                     </div>
                     <div className="text-center p-4 bg-gradient-to-r from-purple-50 to-teal-50 rounded-xl border border-purple-200">
@@ -169,20 +301,31 @@ export default function StampsPage() {
                   <div className="space-y-4">
                     <Button
                       onClick={handleTodayClaim}
-                      disabled={hasClaimed}
+                      disabled={todayStamp.hasClaimed || loading || !isConnected}
                       className={`w-full py-6 text-xl font-bold rounded-xl transition-all duration-300 ${
-                        hasClaimed
+                        todayStamp.hasClaimed || !isConnected
                           ? "bg-gray-300 text-gray-500 cursor-not-allowed"
                           : "bg-gradient-to-r from-orange-500 to-purple-500 hover:from-orange-600 hover:to-purple-600 text-white shadow-lg shadow-orange-200/50 hover:shadow-xl hover:shadow-orange-300/50 transform hover:scale-105"
                       }`}
                     >
-                      {hasClaimed ? "Claimed ✅" : "Claim Today's Stamp 🌟"}
+                      {loading ? (
+                        <>
+                          <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                          Claiming...
+                        </>
+                      ) : todayStamp.hasClaimed ? (
+                        "Claimed ✅"
+                      ) : !isConnected ? (
+                        "Connect Wallet to Claim"
+                      ) : (
+                        "Claim Today's Stamp 🌟"
+                      )}
                     </Button>
 
                     {/* Claims Info */}
                     <div className="text-center space-y-2">
-                      <p className="text-gray-600 mb-2 font-medium">{claimsRemaining} claims remaining</p>
-                      {hasClaimed && <p className="text-gray-500">{"You've"} already claimed this stamp</p>}
+                      <p className="text-gray-600 mb-2 font-medium">{todayStamp.claimsRemaining} claims remaining</p>
+                      {todayStamp.hasClaimed && <p className="text-gray-500">{"You've"} already claimed this stamp</p>}
                     </div>
                   </div>
 
@@ -249,6 +392,7 @@ export default function StampsPage() {
                         </div>
                         <h3 className="text-2xl font-bold text-gray-800 mb-3">{event.title}</h3>
                         <p className="text-gray-600 text-lg">{event.description}</p>
+                        <p className="text-sm text-gray-500 mt-2">Total claimed: {event.totalClaimed}</p>
                       </div>
 
                       {/* Countdown Timer */}
@@ -275,14 +419,25 @@ export default function StampsPage() {
 
                       <Button
                         onClick={() => handleRushClaim(event.id)}
-                        disabled={event.claimed}
+                        disabled={event.claimed || loading || !isConnected}
                         className={`px-8 py-3 text-lg font-bold rounded-xl transition-all duration-300 ${
-                          event.claimed
+                          event.claimed || !isConnected
                             ? "bg-gray-300 text-gray-500 cursor-not-allowed"
                             : "bg-gradient-to-r from-orange-500 to-purple-500 hover:from-orange-600 hover:to-purple-600 text-white shadow-lg shadow-orange-200/50 hover:shadow-xl hover:shadow-orange-300/50 transform hover:scale-105"
                         }`}
                       >
-                        {event.claimed ? "Claimed ✅" : "Claim Now 🚀"}
+                        {loading ? (
+                          <>
+                            <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                            Claiming...
+                          </>
+                        ) : event.claimed ? (
+                          "Claimed ✅"
+                        ) : !isConnected ? (
+                          "Connect Wallet"
+                        ) : (
+                          "Claim Now 🚀"
+                        )}
                       </Button>
                     </div>
                   </div>

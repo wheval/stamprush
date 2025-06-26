@@ -6,7 +6,10 @@
     "dev": "next dev --turbopack --hostname 0.0.0.0 --port 3000",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "ipfs:setup": "node lib/ipfs/setup.js",
+    "ipfs:test": "node lib/ipfs/test-upload.js",
+    "ipfs:help": "node lib/ipfs/setup.js --help"
   },
   "dependencies": {
     "clsx": "^2.1.1",
@@ -15,7 +18,14 @@
     "next": "15.3.4",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "react-leaflet": "^5.0.0"
+    "react-leaflet": "^5.0.0",
+    "starknet": "^6.11.0",
+    "@starknet-io/get-starknet": "^4.0.0",
+    "@starknet-io/types-js": "^0.7.7",
+    "react-hot-toast": "^2.4.1",
+    "axios": "^1.7.9",
+    "form-data": "^4.0.1",
+    "dotenv": "^16.4.7"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
