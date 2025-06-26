@@ -3,454 +3,474 @@
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { Bell, Clock, Zap, MapPin, Users, Loader2 } from "lucide-react"
+import { Bell, Clock, Zap, MapPin, Users, Loader2, Tag, Calendar, Globe, AlertCircle } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
 import Confetti from "@/components/Confetti"
 import { useStarknet } from "@/lib/starknet-provider"
 import { useStampContract } from "@/lib/hooks/use-stamp-contract"
+import { stringToFelt } from "@/lib/config"
 import toast from "react-hot-toast"
 
 export default function StampsPage() {
   const { isConnected, address } = useStarknet()
   const { 
     claimStamp, 
-    getTagMetadata, 
-    getClaimCount, 
+    getTagInfo,
+    getAllAvailableStamps,
     hasUserClaimed, 
-    getUserTotalClaims,
-    loading 
+    loading: contractLoading,
+    contract
   } = useStampContract()
 
-  // Today's stamp state
-  const [todayStamp, setTodayStamp] = useState({
-    id: "community-stamp",
-    name: "Community Stamp",
-    description: "This stamp is a special edition for our community members. Claim it before it's gone!",
-    location: "Community Center",
-    initialTimeLeft: { hours: 12, minutes: 34, seconds: 56 },
-    claimsRemaining: 0,
-    totalClaimed: 0,
-    hasClaimed: false,
-    recentClaims: []
-  })
-  
-  const [timeLeft, setTimeLeft] = useState(todayStamp.initialTimeLeft)
-  const [showTodayConfetti, setShowTodayConfetti] = useState(false)
+  // State for blockchain stamps
+  const [stamps, setStamps] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [claimingStamps, setClaimingStamps] = useState(new Set())
+  const [showConfetti, setShowConfetti] = useState(false)
+  const [error, setError] = useState(null)
 
-  // Rush events state
-  const [events, setEvents] = useState([])
-  const [showRushConfetti, setShowRushConfetti] = useState(false)
-  const [dataLoading, setDataLoading] = useState(true)
+  // Known tag IDs - these are the actual stamps that have been created
+  const knownTagIds = [
+    stringToFelt("city-walker") // Your actual created stamp
+  ]
 
-  // Sample event IDs - replace with your actual tag IDs
-  const sampleEventIds = ["tech-conference", "art-fair", "community-cleanup", "book-signing"]
+  // Debug: Log the exact tag ID being searched
+  console.log('🔍 Debug - "city-walker" converts to:', stringToFelt("city-walker").toString())
 
-  // Load blockchain data
-  useEffect(() => {
-    const loadBlockchainData = async () => {
-      if (!isConnected) {
-        setDataLoading(false)
+  // Load all available stamps from blockchain
+  const loadStamps = async () => {
+    if (!isConnected) {
+      console.log('❌ Not connected to wallet')
+      setLoading(false)
+      return
+    }
+
+    if (!contract) {
+      console.log('❌ Contract not initialized yet')
+      setLoading(false)
+      return
+    }
+
+    try {
+      setLoading(true)
+      setError(null)
+
+      console.log('🔍 Loading stamps from blockchain...')
+      console.log('📋 Known tag IDs to search:', knownTagIds.map(id => id.toString()))
+      
+      // Get all available stamps with their metadata
+      const availableStamps = await getAllAvailableStamps(knownTagIds)
+      
+      console.log('📦 Retrieved stamps from blockchain:', availableStamps)
+      console.log(`📊 Total stamps found: ${availableStamps.length}`)
+
+      if (availableStamps.length === 0) {
+        console.log('⚠️ No stamps found for the given tag IDs')
+        console.log('💡 Try creating a stamp in the admin panel first')
+        setStamps([])
         return
       }
 
-      try {
-        setDataLoading(true)
+      // Check claim status for each stamp
+      console.log('🔍 Checking claim status for each stamp...')
+      const stampsWithClaimStatus = await Promise.all(
+        availableStamps.map(async (stamp, index) => {
+          try {
+            console.log(`📝 Processing stamp ${index + 1}/${availableStamps.length}:`, {
+              tagId: stamp.tagId.toString(),
+              hasMetadata: !!stamp.metadata,
+              metadataName: stamp.metadata?.name,
+              isActive: stamp.isActive
+            })
 
-        // Load today's stamp data
-        const [todayMetadata, todayClaimCount, todayUserClaimed] = await Promise.all([
-          getTagMetadata(todayStamp.id),
-          getClaimCount(todayStamp.id),
-          hasUserClaimed(address, todayStamp.id)
-        ])
-
-        setTodayStamp(prev => ({
-          ...prev,
-          totalClaimed: todayClaimCount,
-          hasClaimed: todayUserClaimed
-        }))
-
-        // Load rush events data
-        const eventsData = await Promise.all(
-          sampleEventIds.map(async (eventId) => {
-            const [metadata, claimCount, userClaimed] = await Promise.all([
-              getTagMetadata(eventId),
-              getClaimCount(eventId),
-              hasUserClaimed(address, eventId)
-            ])
-
-            return {
-              id: eventId,
-              title: metadata?.title || `Event ${eventId}`,
-              description: metadata?.description || `Claim your stamp for ${eventId}`,
-              image: `/rush/${sampleEventIds.indexOf(eventId) + 1}.png`,
-              initialTime: { hours: 1, minutes: 30, seconds: 45 },
-              claimed: userClaimed,
-              totalClaimed: claimCount
+            const userClaimed = await hasUserClaimed(address, stamp.tagId)
+            
+            const processedStamp = {
+              ...stamp,
+              userClaimed,
+              // Calculate time remaining
+              timeRemaining: Math.max(0, stamp.endTime - Math.floor(Date.now() / 1000)),
+              // Use metadata for display or fallback
+              displayName: stamp.metadata?.name || `Stamp ${stamp.tagId.toString().slice(0, 8)}`,
+              displayDescription: stamp.metadata?.description || 'A unique stamp for the community',
+              displayLocation: stamp.metadata?.location || 'Unknown location',
+              displayImage: stamp.metadata?.image || null,
+              // Additional metadata
+              category: stamp.metadata?.attributes?.category || 'general',
+              isLimited: stamp.maxClaims > 0,
+              remainingClaims: stamp.maxClaims > 0 ? Math.max(0, stamp.maxClaims - stamp.claimCount) : Infinity
             }
-          })
-        )
 
-        setEvents(eventsData)
+            console.log(`✅ Processed stamp:`, {
+              displayName: processedStamp.displayName,
+              userClaimed: processedStamp.userClaimed,
+              timeRemaining: processedStamp.timeRemaining,
+              isActive: processedStamp.isActive
+            })
+
+            return processedStamp
+          } catch (error) {
+            console.error(`❌ Error checking claim status for stamp ${stamp.tagId}:`, error)
+            return {
+              ...stamp,
+              userClaimed: false,
+              timeRemaining: Math.max(0, stamp.endTime - Math.floor(Date.now() / 1000)),
+              displayName: `Stamp ${stamp.tagId.toString().slice(0, 8)}`,
+              displayDescription: 'A unique stamp for the community',
+              displayLocation: 'Unknown location',
+              displayImage: null,
+              category: 'general',
+              isLimited: stamp.maxClaims > 0,
+              remainingClaims: stamp.maxClaims > 0 ? Math.max(0, stamp.maxClaims - stamp.claimCount) : Infinity
+            }
+          }
+        })
+      )
+
+      // Sort stamps: unclaimed first, then by remaining time
+      const sortedStamps = stampsWithClaimStatus.sort((a, b) => {
+        if (a.userClaimed !== b.userClaimed) {
+          return a.userClaimed ? 1 : -1 // Unclaimed first
+        }
+        return a.timeRemaining - b.timeRemaining // Expiring sooner first
+      })
+
+      console.log('🎯 Final sorted stamps:', sortedStamps.map(s => ({
+        name: s.displayName,
+        claimed: s.userClaimed,
+        timeLeft: s.timeRemaining
+      })))
+
+      setStamps(sortedStamps)
+      console.log('✅ Stamps loaded successfully:', sortedStamps.length)
+
       } catch (error) {
-        console.error('Error loading blockchain data:', error)
-        toast.error('Failed to load stamp data')
+      console.error('❌ Error loading stamps:', error)
+      setError(`Failed to load stamps: ${error.message}`)
+      toast.error('Failed to load stamps')
       } finally {
-        setDataLoading(false)
+      setLoading(false)
       }
     }
 
-    loadBlockchainData()
-  }, [isConnected, address, getTagMetadata, getClaimCount, hasUserClaimed])
-
-  // Countdown timer effect for today's stamp
+  // Load stamps on component mount and when connection changes
   useEffect(() => {
-    const timer = setInterval(() => {
-      setTimeLeft((prev) => {
-        let { hours, minutes, seconds } = prev
+    loadStamps()
+  }, [isConnected, address, contract])
 
-        if (seconds > 0) {
-          seconds--
-        } else if (minutes > 0) {
-          minutes--
-          seconds = 59
-        } else if (hours > 0) {
-          hours--
-          minutes = 59
-          seconds = 59
-        }
-
-        return { hours, minutes, seconds }
-      })
-    }, 1000)
-
-    return () => clearInterval(timer)
-  }, [])
-
-  // Update rush event timers every second
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setEvents((prevEvents) =>
-        prevEvents && prevEvents.length > 0 ? prevEvents.map((event) => {
-          let { hours, minutes, seconds } = event.initialTime
-
-          if (seconds > 0) {
-            seconds--
-          } else if (minutes > 0) {
-            minutes--
-            seconds = 59
-          } else if (hours > 0) {
-            hours--
-            minutes = 59
-            seconds = 59
-          }
-
-          return {
-            ...event,
-            initialTime: { hours, minutes, seconds },
-          }
-        }) : []
-      )
-    }, 1000)
-
-    return () => clearInterval(interval)
-  }, [])
-
-  const handleTodayClaim = async () => {
+  // Handle stamp claiming
+  const handleClaim = async (stamp) => {
     if (!isConnected) {
       toast.error('Please connect your wallet first')
       return
     }
 
-    if (todayStamp.hasClaimed) {
+    if (stamp.userClaimed) {
       toast.error('You have already claimed this stamp')
       return
     }
 
-    const result = await claimStamp(todayStamp.id)
-    if (result) {
-      setTodayStamp(prev => ({
-        ...prev,
-        hasClaimed: true,
-        totalClaimed: prev.totalClaimed + 1
-      }))
-      setShowTodayConfetti(true)
-    }
-  }
-
-  const handleRushClaim = async (eventId) => {
-    if (!isConnected) {
-      toast.error('Please connect your wallet first')
+    if (stamp.remainingClaims <= 0) {
+      toast.error('No more claims available for this stamp')
       return
     }
 
-    const event = events.find(e => e.id === eventId)
-    if (event?.claimed) {
-      toast.error('You have already claimed this stamp')
+    if (stamp.timeRemaining <= 0) {
+      toast.error('This stamp has expired')
       return
     }
 
-    const result = await claimStamp(eventId)
-    if (result) {
-      setEvents(prevEvents => 
-        prevEvents.map(event => 
-          event.id === eventId 
-            ? { ...event, claimed: true, totalClaimed: event.totalClaimed + 1 }
-            : event
+    // Add to claiming set immediately
+    setClaimingStamps(prev => new Set([...prev, stamp.tagId]))
+    
+    try {
+      console.log(`🎯 Starting claim process for stamp: ${stamp.displayName}`)
+      
+      const result = await claimStamp(stamp.tagId)
+      
+      if (result) {
+        console.log('✅ Claim successful, updating local state')
+        
+        // Update local state
+        setStamps(prevStamps => 
+          prevStamps.map(s => 
+            s.tagId === stamp.tagId 
+              ? { 
+                  ...s, 
+                  userClaimed: true, 
+                  claimCount: s.claimCount + 1,
+                  remainingClaims: s.isLimited ? Math.max(0, s.remainingClaims - 1) : Infinity
+                }
+              : s
+          )
         )
-      )
-    setShowRushConfetti(true)
+        
+        setShowConfetti(true)
+        setTimeout(() => setShowConfetti(false), 3000)
+      } else {
+        console.log('❌ Claim failed or was cancelled')
+      }
+    } catch (error) {
+      console.error('❌ Error in handleClaim:', error)
+      // Error is already handled in claimStamp function
+    } finally {
+      // Always remove from claiming set, regardless of success or failure
+      setClaimingStamps(prev => {
+        const newSet = new Set(prev)
+        newSet.delete(stamp.tagId)
+        return newSet
+      })
+      console.log('🏁 Claim process completed, loading state cleared')
     }
   }
 
-  if (dataLoading) {
+  // Format time remaining
+  const formatTimeRemaining = (seconds) => {
+    if (seconds <= 0) return 'Expired'
+    
+    const days = Math.floor(seconds / (24 * 3600))
+    const hours = Math.floor((seconds % (24 * 3600)) / 3600)
+    const minutes = Math.floor((seconds % 3600) / 60)
+    
+    if (days > 0) return `${days}d ${hours}h`
+    if (hours > 0) return `${hours}h ${minutes}m`
+    return `${minutes}m`
+  }
+
+  // Loading state
+  if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-orange-50 to-purple-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-[#F9F9F9] to-[#FFFFFF] flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
-          <Loader2 className="w-8 h-8 animate-spin text-orange-500" />
-          <p className="text-gray-600">Loading stamps...</p>
+          <Loader2 className="w-8 h-8 animate-spin text-[#FF6F00]" />
+          <p className="text-gray-600">Loading stamps from blockchain...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // Connection prompt
+  if (!isConnected) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-[#F9F9F9] to-[#FFFFFF] flex items-center justify-center">
+        <div className="max-w-md mx-auto text-center p-8">
+          <div className="bg-white rounded-2xl p-8 border-2 border-[#FF6F00]/20 shadow-lg">
+            <Tag className="w-16 h-16 text-[#FF6F00] mx-auto mb-4" />
+            <h2 className="text-2xl font-bold text-gray-800 mb-4">Connect Your Wallet</h2>
+            <p className="text-gray-600 mb-6">Connect your wallet to view and claim available stamps.</p>
+            <Link href="/">
+              <Button className="bg-gradient-to-r from-[#FF6F00] to-[#9C27B0] hover:from-[#FF6F00]/90 hover:to-[#9C27B0]/90 text-white px-6 py-2 rounded-lg">
+                Go Home
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-[#F9F9F9] to-[#FFFFFF] flex items-center justify-center">
+        <div className="max-w-md mx-auto text-center p-8">
+          <div className="bg-white rounded-2xl p-8 border-2 border-red-200 shadow-lg">
+            <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
+            <h2 className="text-2xl font-bold text-gray-800 mb-4">Error Loading Stamps</h2>
+            <p className="text-gray-600 mb-6">{error}</p>
+            <Button 
+              onClick={loadStamps}
+              className="bg-gradient-to-r from-[#FF6F00] to-[#9C27B0] hover:from-[#FF6F00]/90 hover:to-[#9C27B0]/90 text-white px-6 py-2 rounded-lg"
+            >
+              Try Again
+            </Button>
+          </div>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 to-purple-50">
-      <Confetti 
-        show={showTodayConfetti || showRushConfetti} 
-        onComplete={() => {
-          setShowTodayConfetti(false)
-          setShowRushConfetti(false)
-        }} 
-      />
+    <div className="min-h-screen bg-gradient-to-br from-[#F9F9F9] to-[#FFFFFF]">
+      {showConfetti && <Confetti />}
       
-      {/* Main Content */}
-      <main className="px-6 py-8 max-w-6xl mx-auto">
-        {/* Page Header */}
-        <div className="text-center mb-12">
-          <h1 className="text-5xl font-bold bg-gradient-to-r from-orange-500 via-purple-500 to-teal-500 bg-clip-text text-transparent mb-4">
-            Stamps
-          </h1>
-          <p className="text-gray-600 text-lg">
-            Claim today's featured stamp and discover limited-time stamps in real-time!
-          </p>
-          {!isConnected && (
-            <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-              <p className="text-yellow-800">Connect your wallet to claim stamps and view your collection!</p>
+      {/* Header */}
+      <div className="px-6 py-8 max-w-7xl mx-auto">
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h1 className="text-4xl font-bold text-[#FF6F00] mb-2">Available Stamps</h1>
+            <p className="text-gray-600">Discover and claim stamps from the blockchain</p>
             </div>
-          )}
+          <Button 
+            onClick={loadStamps}
+            disabled={loading}
+            className="bg-gradient-to-r from-[#FF6F00] to-[#9C27B0] hover:from-[#FF6F00]/90 hover:to-[#9C27B0]/90 text-white"
+          >
+            {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Globe className="w-4 h-4 mr-2" />}
+            Refresh
+          </Button>
         </div>
 
-        {/* Today's Stamp Section */}
-        <section className="mb-16">
-          <div className="flex items-center gap-3 mb-8">
-            <Clock className="w-7 h-7 text-orange-500" />
-            <h2 className="text-4xl font-bold text-gray-800">Today's Featured Stamp</h2>
+        {/* Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <Card className="bg-white border-[#FF6F00]/20">
+            <CardContent className="p-6">
+              <div className="flex items-center gap-3">
+                <Tag className="w-8 h-8 text-[#FF6F00]" />
+                <div>
+                  <p className="text-2xl font-bold text-gray-800">{stamps.length}</p>
+                  <p className="text-gray-600">Available Stamps</p>
+                </div>
           </div>
-
-          <div className="bg-white rounded-3xl border-2 border-orange-200 shadow-lg shadow-orange-100/50 overflow-hidden">
-            {/* Stamp Image */}
-            <div className="relative h-64 sm:h-80 bg-gradient-to-br from-orange-400 via-purple-500 to-teal-400 flex items-center justify-center">
-              <div className="text-white text-6xl sm:text-8xl opacity-90">
-                🌿
+            </CardContent>
+          </Card>
+          
+          <Card className="bg-white border-[#9C27B0]/20">
+            <CardContent className="p-6">
+              <div className="flex items-center gap-3">
+                <Zap className="w-8 h-8 text-[#9C27B0]" />
+                <div>
+                  <p className="text-2xl font-bold text-gray-800">{stamps.filter(s => s.userClaimed).length}</p>
+                  <p className="text-gray-600">Claimed by You</p>
+                </div>
               </div>
-              
-              {/* Time Badge */}
-              <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm rounded-full px-4 py-2 flex items-center gap-2">
-                <Clock className="w-4 h-4 text-orange-500" />
-                <span className="text-sm font-semibold text-gray-800">
-                  {timeLeft.hours.toString().padStart(2, "0")}:
-                  {timeLeft.minutes.toString().padStart(2, "0")}:
-                  {timeLeft.seconds.toString().padStart(2, "0")}
-                </span>
+            </CardContent>
+          </Card>
+          
+          <Card className="bg-white border-[#00C9A7]/20">
+            <CardContent className="p-6">
+              <div className="flex items-center gap-3">
+                <Clock className="w-8 h-8 text-[#00C9A7]" />
+                <div>
+                  <p className="text-2xl font-bold text-gray-800">{stamps.filter(s => !s.userClaimed && s.timeRemaining > 0).length}</p>
+                  <p className="text-gray-600">Available to Claim</p>
+                </div>
               </div>
+            </CardContent>
+          </Card>
             </div>
 
-            {/* Content */}
-            <div className="p-8">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                {/* Left Column - Details */}
-                <div className="space-y-6">
-                  <div>
-                    <h3 className="text-3xl font-bold text-gray-800 mb-2">{todayStamp.name}</h3>
-                    <p className="text-gray-600 text-lg leading-relaxed">{todayStamp.description}</p>
+        {/* Stamps Grid */}
+        {stamps.length === 0 ? (
+          <div className="text-center py-12">
+            <Tag className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+            <h3 className="text-xl font-semibold text-gray-500 mb-2">No Stamps Available</h3>
+            <p className="text-gray-400 mb-6">Check back later for new stamps to claim.</p>
+            <Button 
+              onClick={() => {
+                console.log('🔄 Manual refresh triggered')
+                loadStamps()
+              }}
+              variant="outline"
+              className="border-[#FF6F00] text-[#FF6F00] hover:bg-[#FF6F00]/10"
+            >
+              <Globe className="w-4 h-4 mr-2" />
+              Refresh
+            </Button>
+                  </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {stamps.map((stamp) => (
+              <Card 
+                key={stamp.tagId} 
+                className={`bg-white border-2 transition-all duration-300 hover:shadow-lg ${
+                  stamp.userClaimed 
+                    ? 'border-green-200 bg-green-50' 
+                    : stamp.timeRemaining <= 0 
+                    ? 'border-gray-200 bg-gray-50' 
+                    : 'border-[#FF6F00]/20 hover:border-[#FF6F00]/40'
+                }`}
+              >
+                <CardContent className="p-6">
+                  {/* Stamp Image */}
+                  <div className="w-full h-32 bg-gradient-to-br from-[#FF6F00]/10 to-[#9C27B0]/10 rounded-lg mb-4 flex items-center justify-center">
+                    {stamp.displayImage ? (
+                      <Image 
+                        src={stamp.displayImage} 
+                        alt={stamp.displayName}
+                        width={80}
+                        height={80}
+                        className="rounded-lg object-cover"
+                      />
+                    ) : (
+                      <Tag className="w-12 h-12 text-[#FF6F00]" />
+                    )}
                   </div>
 
-                  {/* Location */}
-                  <div className="flex items-center gap-3 p-4 bg-gradient-to-r from-teal-50 to-purple-50 rounded-xl border border-teal-200">
-                    <MapPin className="w-5 h-5 text-teal-500" />
-                    <span className="font-semibold text-gray-800">{todayStamp.location}</span>
-                  </div>
-
-                  {/* Stats */}
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="text-center p-4 bg-gradient-to-r from-orange-50 to-purple-50 rounded-xl border border-orange-200">
-                      <div className="text-2xl font-bold text-orange-500">{todayStamp.claimsRemaining}</div>
-                      <div className="text-sm text-gray-600 font-medium">Claims Left</div>
+                  {/* Stamp Info */}
+                  <div className="space-y-3">
+                    <div>
+                      <h3 className="text-lg font-bold text-gray-800 mb-1">{stamp.displayName}</h3>
+                      <p className="text-gray-600 text-sm line-clamp-2">{stamp.displayDescription}</p>
                     </div>
-                    <div className="text-center p-4 bg-gradient-to-r from-purple-50 to-teal-50 rounded-xl border border-purple-200">
-                      <div className="text-2xl font-bold text-purple-500">{todayStamp.totalClaimed}</div>
-                      <div className="text-sm text-gray-600 font-medium">Total Claimed</div>
-                    </div>
-                  </div>
-                </div>
 
-                {/* Right Column - Action */}
-                <div className="space-y-6">
-                  {/* Claim Button */}
-                  <div className="space-y-4">
+                    {/* Location */}
+                    {stamp.displayLocation && (
+                      <div className="flex items-center gap-2 text-gray-500">
+                        <MapPin className="w-4 h-4" />
+                        <span className="text-sm">{stamp.displayLocation}</span>
+                      </div>
+                    )}
+
+                    {/* Stats */}
+                    <div className="flex justify-between text-sm">
+                      <div className="flex items-center gap-1 text-gray-500">
+                        <Users className="w-4 h-4" />
+                        <span>{stamp.claimCount} claimed</span>
+                      </div>
+                      <div className="flex items-center gap-1 text-gray-500">
+                        <Clock className="w-4 h-4" />
+                        <span>{formatTimeRemaining(stamp.timeRemaining)}</span>
+                      </div>
+                    </div>
+
+                    {/* Claims remaining */}
+                    {stamp.isLimited && (
+                      <div className="text-sm text-[#9C27B0] font-medium">
+                        {stamp.remainingClaims} claims remaining
+                  </div>
+                    )}
+
+                    {/* Action Button */}
                     <Button
-                      onClick={handleTodayClaim}
-                      disabled={todayStamp.hasClaimed || loading || !isConnected}
-                      className={`w-full py-6 text-xl font-bold rounded-xl transition-all duration-300 ${
-                        todayStamp.hasClaimed || !isConnected
-                          ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                          : "bg-gradient-to-r from-orange-500 to-purple-500 hover:from-orange-600 hover:to-purple-600 text-white shadow-lg shadow-orange-200/50 hover:shadow-xl hover:shadow-orange-300/50 transform hover:scale-105"
+                      onClick={() => handleClaim(stamp)}
+                      disabled={
+                        stamp.userClaimed || 
+                        stamp.timeRemaining <= 0 || 
+                        stamp.remainingClaims <= 0 ||
+                        claimingStamps.has(stamp.tagId)
+                      }
+                      className={`w-full ${
+                        stamp.userClaimed
+                          ? 'bg-green-500 text-white cursor-not-allowed'
+                          : stamp.timeRemaining <= 0 || stamp.remainingClaims <= 0
+                          ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                          : 'bg-gradient-to-r from-[#FF6F00] to-[#9C27B0] hover:from-[#FF6F00]/90 hover:to-[#9C27B0]/90 text-white'
                       }`}
                     >
-                      {loading ? (
+                      {claimingStamps.has(stamp.tagId) ? (
                         <>
-                          <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                          <Loader2 className="w-4 h-4 animate-spin mr-2" />
                           Claiming...
                         </>
-                      ) : todayStamp.hasClaimed ? (
-                        "Claimed ✅"
-                      ) : !isConnected ? (
-                        "Connect Wallet to Claim"
+                      ) : stamp.userClaimed ? (
+                        'Claimed ✓'
+                      ) : stamp.timeRemaining <= 0 ? (
+                        'Expired'
+                      ) : stamp.remainingClaims <= 0 ? (
+                        'Sold Out'
                       ) : (
-                        "Claim Today's Stamp 🌟"
+                        'Claim Stamp'
                       )}
                     </Button>
-
-                    {/* Claims Info */}
-                    <div className="text-center space-y-2">
-                      <p className="text-gray-600 mb-2 font-medium">{todayStamp.claimsRemaining} claims remaining</p>
-                      {todayStamp.hasClaimed && <p className="text-gray-500">{"You've"} already claimed this stamp</p>}
-                    </div>
                   </div>
-
-                  {/* Community Activity */}
-                  <div className="space-y-3">
-                    <h4 className="font-semibold text-gray-800 flex items-center gap-2">
-                      <Users className="w-5 h-5 text-purple-500" />
-                      Recent Claims
-                    </h4>
-                    <div className="space-y-2">
-                      {todayStamp.recentClaims.map((claim, index) => (
-                        <div key={index} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                          <div className="w-8 h-8 bg-gradient-to-r from-orange-400 to-purple-400 rounded-full flex items-center justify-center">
-                            <span className="text-white font-semibold text-sm">{claim.user.charAt(0).toUpperCase()}</span>
-                          </div>
-                          <div className="flex-1">
-                            <span className="font-semibold text-gray-800">{claim.user}</span>
-                            <span className="text-gray-600 text-sm ml-2">{claim.time}</span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Rush Events Section */}
-        <section className="mb-8">
-          <div className="flex items-center gap-3 mb-8">
-            <Zap className="w-7 h-7 text-orange-500" />
-            <h2 className="text-4xl font-bold text-gray-800">Limited-Time Stamps</h2>
-          </div>
-          <p className="text-gray-600 text-lg mb-8">
-            Hurry! These exclusive stamps won't last long. Claim them before time runs out!
-          </p>
-
-          <div className="space-y-8">
-            {events && events.length > 0 ? (
-              events.map((event) => (
-                <div key={event.id} className="bg-white rounded-2xl border-2 border-orange-200 shadow-lg shadow-orange-100/50 overflow-hidden">
-                  <div className="flex flex-col lg:flex-row">
-                    {/* Event Image */}
-                    <div className="lg:w-80 w-full lg:h-auto h-48">
-                      <div className="relative overflow-hidden rounded-l-2xl lg:rounded-l-2xl lg:rounded-r-none rounded-r-2xl lg:rounded-tr-none lg:rounded-br-none h-full">
-                        <Image
-                          src={event.image}
-                          alt={event.title}
-                          fill
-                          className="object-cover w-full h-full"
-                          sizes="(max-width: 1024px) 100vw, 320px"
-                        />
-                      </div>
-                    </div>
-
-                    {/* Event Info */}
-                    <div className="flex-1 p-8">
-                      <div className="mb-6">
-                        <div className="flex items-center gap-2 text-sm text-orange-500 font-medium mb-2">
-                          <Clock className="w-4 h-4" />
-                          Expires in
-                        </div>
-                        <h3 className="text-2xl font-bold text-gray-800 mb-3">{event.title}</h3>
-                        <p className="text-gray-600 text-lg">{event.description}</p>
-                        <p className="text-sm text-gray-500 mt-2">Total claimed: {event.totalClaimed}</p>
-                      </div>
-
-                      {/* Countdown Timer */}
-                      <div className="flex gap-4 mb-6">
-                        <div className="bg-gradient-to-r from-orange-50 to-purple-50 border-2 border-orange-200 rounded-xl px-4 py-3 text-center min-w-[80px]">
-                          <div className="text-2xl font-bold text-orange-500">
-                            {event.initialTime.hours.toString().padStart(2, "0")}
-                          </div>
-                          <div className="text-xs text-gray-600 font-medium">Hours</div>
-                        </div>
-                        <div className="bg-gradient-to-r from-purple-50 to-teal-50 border-2 border-purple-200 rounded-xl px-4 py-3 text-center min-w-[80px]">
-                          <div className="text-2xl font-bold text-purple-500">
-                            {event.initialTime.minutes.toString().padStart(2, "0")}
-                          </div>
-                          <div className="text-xs text-gray-600 font-medium">Minutes</div>
-                        </div>
-                        <div className="bg-gradient-to-r from-teal-50 to-orange-50 border-2 border-teal-200 rounded-xl px-4 py-3 text-center min-w-[80px]">
-                          <div className="text-2xl font-bold text-teal-500">
-                            {event.initialTime.seconds.toString().padStart(2, "0")}
-                          </div>
-                          <div className="text-xs text-gray-600 font-medium">Seconds</div>
-                        </div>
-                      </div>
-
-                      <Button
-                        onClick={() => handleRushClaim(event.id)}
-                        disabled={event.claimed || loading || !isConnected}
-                        className={`px-8 py-3 text-lg font-bold rounded-xl transition-all duration-300 ${
-                          event.claimed || !isConnected
-                            ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                            : "bg-gradient-to-r from-orange-500 to-purple-500 hover:from-orange-600 hover:to-purple-600 text-white shadow-lg shadow-orange-200/50 hover:shadow-xl hover:shadow-orange-300/50 transform hover:scale-105"
-                        }`}
-                      >
-                        {loading ? (
-                          <>
-                            <Loader2 className="w-5 h-5 animate-spin mr-2" />
-                            Claiming...
-                          </>
-                        ) : event.claimed ? (
-                          "Claimed ✅"
-                        ) : !isConnected ? (
-                          "Connect Wallet"
-                        ) : (
-                          "Claim Now 🚀"
-                        )}
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <div className="text-center py-12">
-                <p className="text-gray-500 text-lg">No limited-time stamps available right now.</p>
+                </CardContent>
+              </Card>
+            ))}
               </div>
             )}
           </div>
-        </section>
-      </main>
     </div>
   )
 }

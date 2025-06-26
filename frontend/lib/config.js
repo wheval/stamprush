@@ -350,7 +350,7 @@ export const CONTRACT_CONFIG = {
   
   // Network configuration
   NETWORK: process.env.NEXT_PUBLIC_STARKNET_NETWORK || "sepolia",
-  RPC_URL: process.env.NEXT_PUBLIC_STARKNET_RPC_URL || "https://starknet-sepolia.public.blastapi.io"
+  RPC_URL: process.env.NEXT_PUBLIC_STARKNET_RPC_URL || "https://starknet-sepolia.public.blastapi.io/rpc/v0_7"
 }
 
 // Helper function to convert string to felt

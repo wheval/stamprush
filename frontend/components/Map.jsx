@@ -32,25 +32,25 @@ export default function Map({ className = "h-96" }) {
         
         // Import stamp locations
         const { default: locations } = await import('@/mock/map')
-        
+
         // Fix default icon issue
         if (L.Icon.Default.prototype._getIconUrl) {
-          delete L.Icon.Default.prototype._getIconUrl
+delete L.Icon.Default.prototype._getIconUrl
         }
         
-        L.Icon.Default.mergeOptions({
-          iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
-          iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
-          shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-        })
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
+  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+})
 
         // Create custom stamp icon
         const icon = new L.Icon({
-          iconUrl: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTEyIDJMMTUuMDkgOC4yNkw2NCA5TDU5IDE0TDYwLjE4IDIxTDUyIDE3Ljc3TDQ1LjgyIDIxTDQ3IDE0TDQyIDlMNDguOTEgOC4yNkw1MiAyWiIgZmlsbD0iI2VmNDQ0NCIvPgo8L3N2Zz4K',
-          iconSize: [25, 25],
-          iconAnchor: [12, 12],
-          popupAnchor: [0, -12],
-        })
+  iconUrl: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTEyIDJMMTUuMDkgOC4yNkw2NCA5TDU5IDE0TDYwLjE4IDIxTDUyIDE3Ljc3TDQ1LjgyIDIxTDQ3IDE0TDQyIDlMNDguOTEgOC4yNkw1MiAyWiIgZmlsbD0iI2VmNDQ0NCIvPgo8L3N2Zz4K',
+  iconSize: [25, 25],
+  iconAnchor: [12, 12],
+  popupAnchor: [0, -12],
+})
 
         setStampIcon(icon)
         setStampLocations(locations)

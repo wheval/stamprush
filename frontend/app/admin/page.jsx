@@ -285,22 +285,28 @@ export default function SubmitTagPage() {
         endTime = now + (365 * 24 * 60 * 60)
       }
       
-      // Create stamp metadata object
+      // Create stamp metadata object with comprehensive information
       const stampMetadata = {
         name: formData.tagName,
         description: formData.tagDescription,
         location: formData.tagLocation || '',
-        image: formData.tagImage ? formData.tagImage.name : '',
+        image: '', // Will be set after IPFS upload
         attributes: {
           maxClaims: maxClaims,
           startTime: startTime,
           endTime: endTime,
           isTimeLimited: formData.claimRules.timeLimited,
           isLimitedClaims: formData.claimRules.limitedClaims,
-          isFirstComeFirstServed: formData.claimRules.firstComeFirstServed
+          isFirstComeFirstServed: formData.claimRules.firstComeFirstServed,
+          category: "stamp",
+          network: "starknet"
         },
+        external_url: `${window.location.origin}/stamps/${stringToFelt(formData.tagName)}`,
+        animation_url: null,
+        background_color: null,
         createdAt: new Date().toISOString(),
-        version: '1.0'
+        version: '1.0',
+        standard: "stamprush-v1"
       }
 
       console.log('Creating stamp with data:', {
@@ -315,13 +321,24 @@ export default function SubmitTagPage() {
       toast.loading('Uploading to IPFS...', { id: 'creating-stamp' })
       const ipfsResult = await uploadToIPFS(formData.tagImage, stampMetadata)
       
-      // Use IPFS URI as metadata URI, fallback to tag name if IPFS fails
+      // Use IPFS hash as metadata URI - this is the key change
       let metadataUri
-      if (ipfsResult.metadataUri) {
-        // Convert IPFS URI to felt252 (remove ipfs:// prefix and convert hash)
+      if (ipfsResult.metadataUri && !ipfsResult.fallback) {
+        // Extract IPFS hash from URI and store it as felt252
         const ipfsHash = ipfsResult.metadataUri.replace('ipfs://', '')
-        metadataUri = stringToFelt(ipfsHash.substring(0, 31)) // Truncate to fit felt252
-        console.log('✅ Using IPFS metadata URI')
+        
+        // Store the full IPFS hash (we'll use this to fetch metadata later)
+        // Convert IPFS hash to felt252 - we need to be careful about length
+        try {
+          metadataUri = stringToFelt(ipfsHash.substring(0, 31)) // Ensure it fits in felt252
+          console.log('✅ Using IPFS metadata URI:', ipfsHash)
+          console.log('✅ Metadata URI felt252:', metadataUri.toString())
+        } catch (error) {
+          console.error('Error converting IPFS hash to felt252:', error)
+          // Fallback to tag name if conversion fails
+          metadataUri = stringToFelt(formData.tagName)
+          console.log('⚠️ Using fallback metadata URI (tag name)')
+        }
       } else {
         // Fallback to tag name if IPFS upload failed or not configured
         metadataUri = stringToFelt(formData.tagName)
@@ -336,15 +353,32 @@ export default function SubmitTagPage() {
       }
 
       console.log('IPFS upload result:', ipfsResult)
-      console.log('Metadata URI for contract:', metadataUri.toString())
+      console.log('Final metadata URI for contract:', metadataUri.toString())
 
       toast.loading('Creating stamp on blockchain...', { id: 'creating-stamp' })
 
-      // Call the contract
+      // Call the contract with the IPFS hash
       const result = await addTag(tagId, maxClaims, startTime, endTime, metadataUri)
       
       if (result) {
         toast.dismiss('creating-stamp')
+        
+        // Log success details for debugging
+        console.log('✅ Stamp created successfully:', {
+          tagId: tagId.toString(),
+          transactionHash: result.transaction_hash,
+          ipfsHash: ipfsResult.metadataUri?.replace('ipfs://', ''),
+          gatewayUrl: ipfsResult.gatewayUrls?.metadata
+        })
+
+        // Show success message with IPFS details
+        if (ipfsResult.metadataUri && !ipfsResult.fallback) {
+          toast.success(`Stamp created successfully! 
+            Metadata stored on IPFS: ${ipfsResult.metadataUri.replace('ipfs://', '').substring(0, 10)}...`)
+        } else {
+          toast.success('Stamp created successfully!')
+        }
+        
         // Reset form on success
         setFormData({
           tagName: "",
@@ -361,7 +395,6 @@ export default function SubmitTagPage() {
           endDate: "",
         })
         setTagIdPreview("")
-        toast.success('Stamp created successfully!')
       }
     } catch (error) {
       toast.dismiss('creating-stamp')
