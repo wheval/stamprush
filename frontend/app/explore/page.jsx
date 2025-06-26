@@ -6,7 +6,17 @@ import { Input } from "@/components/ui/input"
 import { Bell, Search } from "lucide-react"
 import Link from "next/link"
 import recentClaims from "@/mock/explore"
-import Map from "@/components/Map"
+import dynamic from "next/dynamic"
+
+// Dynamically import Map component with SSR disabled
+const Map = dynamic(() => import("@/components/Map"), {
+  ssr: false,
+  loading: () => (
+    <div className="h-96 bg-gray-100 rounded-2xl flex items-center justify-center">
+      <div className="text-gray-500">Loading map...</div>
+    </div>
+  ),
+})
 
 export default function ExplorePage() {
   const [activeTab, setActiveTab] = useState("Global")
